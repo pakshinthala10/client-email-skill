@@ -84,6 +84,35 @@ export default async function handler(req, res) {
       return res.status(200).json(data);
     }
 
+    // ── Action 4: Send email via Resend ────────────────────────
+    if (action === 'sendEmail') {
+      const { to, toName, subject, body, fromName } = req.body;
+
+      const response = await fetch('https://api.resend.com/emails', {
+        method: 'POST',
+        headers: {
+          'Authorization': `Bearer ${process.env.RESEND_API_KEY}`,
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          from: `${fromName || 'Your Advisory Team'} <onboarding@resend.dev>`,
+          to: [to],
+          subject: subject,
+          text: body
+        })
+      });
+
+      const data = await response.json();
+
+      if (!response.ok) {
+        return res.status(200).json({
+          error: `Resend error (${response.status}): ${data.message || JSON.stringify(data)}`
+        });
+      }
+
+      return res.status(200).json({ success: true, id: data.id });
+    }
+
     return res.status(400).json({ error: 'Unknown action: ' + action });
 
   } catch (err) {
